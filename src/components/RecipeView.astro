@@ -1,0 +1,24 @@
+---
+import type { Recipe } from '../lib/recipe-schema';
+import { CATEGORIES } from '../lib/recipe-schema';
+import { pathFor } from '../lib/site-config';
+interface Props { recipe: Recipe }
+const { recipe } = Astro.props;
+const cover = recipe.images.find((image) => image.kind === 'cover')!;
+const formatDate = (value: string) => new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(value));
+---
+<article class="container recipe-page">
+  <nav class="breadcrumbs" aria-label="Хлебные крошки"><a href={pathFor()}>Главная</a><span>/</span><a href={pathFor('categories/')}>Рецепты</a><span>/</span><a href={pathFor(`categories/${recipe.category}/`)}>{CATEGORIES[recipe.category].title}</a></nav>
+  {recipe.demo && <aside class="demo-notice"><strong>Демонстрационная страница</strong><span>Это пример оформления, а не опубликованный или проверенный рецепт. Ингредиенты и шаги тестовые. Не используйте их для приготовления.</span></aside>}
+  <header class="recipe-header"><span class="eyebrow">{CATEGORIES[recipe.category].title}</span><h1>{recipe.title}</h1><p class="lead">{recipe.description}</p>
+    <div class="recipe-facts">{recipe.dates.published && <time datetime={recipe.dates.published}>Опубликовано {formatDate(recipe.dates.published)}</time>}{recipe.details.servings && <span>Порций: {recipe.details.servings.value}</span>}{recipe.details.prepMinutes && <span>Подготовка: {recipe.details.prepMinutes.value} мин</span>}{recipe.details.cookMinutes && <span>Приготовление: {recipe.details.cookMinutes.value} мин</span>}</div>
+    <a class="button small" href="#instructions">К шагам приготовления ↓</a>
+  </header>
+  <figure class="recipe-cover"><img src={pathFor(cover.src)} alt={cover.alt} width={cover.width} height={cover.height} fetchpriority="high" /><figcaption>{recipe.demo ? 'Иллюстрация демо, не фотография проверенного рецепта. ' : ''}Фото: {cover.credit}</figcaption></figure>
+  <div class="recipe-body"><aside class="ingredients"><span class="eyebrow">Сначала подготовим</span><h2>Ингредиенты</h2><ul>{recipe.ingredients.map((item) => <li><span>{item.name}</span><strong>{item.quantity}</strong></li>)}</ul><p class="ingredients-note">Список для одной закладки. Количества указаны в рецепте.</p></aside>
+    <section class="instructions" id="instructions"><p class="introduction">{recipe.introduction}</p><h2>Готовим шаг за шагом</h2><ol>{recipe.steps.map((step, index) => <li><span class="step-number">{String(index + 1).padStart(2, '0')}</span><div><p>{step.text}</p>{step.tip && <aside class="recipe-tip"><strong>На заметку</strong>{step.tip}</aside>}{recipe.images.filter((image) => image.kind === 'step')[index] && <img class="step-image" src={pathFor(recipe.images.filter((image) => image.kind === 'step')[index]!.src)} alt={recipe.images.filter((image) => image.kind === 'step')[index]!.alt} width={recipe.images.filter((image) => image.kind === 'step')[index]!.width} height={recipe.images.filter((image) => image.kind === 'step')[index]!.height} loading="lazy" />}</div></li>)}</ol>
+    {recipe.sources.length > 0 && <section class="sources"><h2>Источники и полезные ссылки</h2><ul>{recipe.sources.map((source) => <li><a href={source.url} rel="noopener noreferrer">{source.title} ↗︎</a></li>)}</ul></section>}
+    </section>
+  </div>
+  <div class="recipe-end"><span>✳︎</span><p>{recipe.demo ? 'Настоящие рецепты появятся после проверки.' : 'Сохраните этот рецепт в свой кулинарный блокнотик.'}</p><a class="text-link" href={pathFor('categories/')}>Ко всем категориям →</a></div>
+</article>

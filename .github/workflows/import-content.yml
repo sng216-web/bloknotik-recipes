@@ -1,0 +1,42 @@
+name: Stage approved editorial content
+
+on:
+  repository_dispatch:
+    types: [bloknotik-content-approved]
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: Strict ImportEnvelope JSON; approved non-demo recipe only
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: approved-content-imports
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Validate payload and stage locally
+        run: npm run content:import -- --github-event "$GITHUB_EVENT_PATH"
+      - run: npm run check
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - name: Commit staging data and open PR
+        run: npx tsx scripts/github-import.ts
+        env:
+          GH_TOKEN: ${{ github.token }}

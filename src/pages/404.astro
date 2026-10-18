@@ -1,0 +1,5 @@
+---
+import Base from '../layouts/Base.astro';
+import { pathFor } from '../lib/site-config';
+---
+<Base title="Страница не найдена" canonicalPath="404.html" noindex><section class="container closing-note"><span class="eyebrow">404 · Пустая страница блокнота</span><h1>Кажется, здесь<br />ещё нет рецепта.</h1><p>Проверьте адрес или вернитесь к категориям.</p><a class="button" href={pathFor('categories/')}>Открыть блокнотик ↗︎</a></section></Base>

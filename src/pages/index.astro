@@ -1,0 +1,21 @@
+---
+import Base from '../layouts/Base.astro';
+import RecipeCard from '../components/RecipeCard.astro';
+import EmptyState from '../components/EmptyState.astro';
+import { demoRecipes, publishedRecipes } from '../lib/catalog';
+import { CATEGORIES } from '../lib/recipe-schema';
+import { pathFor } from '../lib/site-config';
+const recipes = publishedRecipes();
+const demos = demoRecipes();
+---
+<Base>
+  <section class="container hero">
+    <div class="hero-copy"><div class="eyebrow"><span class="tiny-line"></span>Ваш кулинарный блокнотик</div><h1>Простые продукты.<br /><em>Тёплые истории.</em></h1><p>Рецепты для обычных дней и маленьких праздников. Понятные шаги, сезонные продукты и немного вдохновения на вашей кухне.</p><a class="button" href={pathFor('categories/')}>Открыть блокнотик <span>↗︎</span></a><div class="hero-footnote"><span aria-hidden="true">✳︎</span>Сначала приготовим. Потом опубликуем.</div></div>
+    <div class="hero-visual"><img src={pathFor('images/kitchen.webp')} alt="Разноцветные овощи и свежая зелень на домашнем столе" width="1600" height="1000" fetchpriority="high" /><span class="photo-label">Ближе к природе.<br />Ближе к домашнему.</span><span class="hero-stamp" aria-hidden="true">сезон<br /><b>вдохновения</b><span>✳︎</span></span></div>
+  </section>
+  <section class="container categories-strip" aria-label="Категории рецептов"><span class="eyebrow">Что приготовим?</span><div>{Object.entries(CATEGORIES).map(([slug, category]) => <a href={pathFor(`categories/${slug}/`)}><span aria-hidden="true">{category.symbol}</span>{category.title}</a>)}</div></section>
+  <section class="container section"><div class="section-heading"><div><span class="eyebrow">Листаем дальше</span><h2>Новое в блокнотике</h2></div><a class="text-link" href={pathFor('categories/')}>Все рецепты <span>↗︎</span></a></div>{recipes.length ? <div class="recipe-grid">{recipes.slice(0, 6).map((recipe) => <RecipeCard recipe={recipe} />)}</div> : <EmptyState />}</section>
+  <section class="manifesto"><div class="container manifesto-inner"><span class="manifesto-mark" aria-hidden="true">✳︎</span><div><span class="eyebrow">Наш подход</span><h2>Хороший рецепт — тот,<br />которому можно доверять.</h2></div><div><p>Мы строим место для понятных рецептов с проверенными пропорциями, подробными шагами и честными пояснениями. Без выдуманных оценок и обещаний.</p><a class="text-link" href={pathFor('about/')}>Как устроен Блокнотик ↗︎</a></div></div></section>
+  <section class="container section demo-section"><div class="section-heading"><div><span class="eyebrow">Знакомство с проектом</span><h2>Так будет выглядеть рецепт</h2></div><span class="section-note">Демонстрации интерфейса,<br />не опубликованные материалы</span></div><div class="recipe-grid">{demos.map((recipe) => <RecipeCard recipe={recipe} />)}</div></section>
+  <section class="container closing-note"><span class="eyebrow">Пока на кухне тихо</span><h2>У каждого хорошего блюда<br />есть своя история.</h2><p>Скоро начнём записывать наши. Новые утверждённые рецепты появятся здесь и в RSS.</p><a class="text-link" href={pathFor('rss.xml')}>Лента новых публикаций ↗︎</a></section>
+</Base>
