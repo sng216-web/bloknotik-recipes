@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { normalizeEditorialImport } from '../src/lib/editorial-contract.js';
 import { importApprovedContent, ImportEnvelopeSchema } from '../src/lib/import-content.js';
 import { ensureImportPullRequest, type ImportPullRequest } from './import-pr.js';
 
@@ -9,7 +10,7 @@ const eventFile = process.env['GITHUB_EVENT_PATH'];
 if (!eventFile || process.env['GITHUB_REPOSITORY'] !== 'sng216-web/bloknotik-recipes') throw new Error('This command is for the site repository Actions job only');
 if (fs.statSync(eventFile).size > 512 * 1024) throw new Error('Event exceeds import size limit');
 const event = JSON.parse(fs.readFileSync(eventFile, 'utf8')) as { inputs?: { payload?: string }; client_payload?: unknown };
-const envelope = ImportEnvelopeSchema.parse(event.inputs?.payload ? JSON.parse(event.inputs.payload) : event.client_payload);
+const envelope = ImportEnvelopeSchema.parse(normalizeEditorialImport(event.inputs?.payload ? JSON.parse(event.inputs.payload) : event.client_payload));
 const result = await importApprovedContent(envelope);
 const branch = `content/import-${envelope.importId}`;
 const marker = `content/imports/${envelope.importId}.json`;

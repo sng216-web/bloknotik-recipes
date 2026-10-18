@@ -15,9 +15,9 @@ async function workspace() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bloknotik-release-test-'));
   fs.mkdirSync(path.join(root, 'public/images'), { recursive: true });
   fs.mkdirSync(path.join(root, 'content/incoming'), { recursive: true });
-  const recipe = approvedFixture(); recipe.images[0]!.width = 16; recipe.images[0]!.height = 10;
+  const recipe = approvedFixture(); recipe.images = recipe.images.map(i => ({ ...i, width: 16, height: 9 }));
   const approved = reseal(recipe);
-  await sharp({ create: { width: 16, height: 10, channels: 3, background: '#ccc' } }).webp().toFile(path.join(root, 'public', approved.images[0]!.src));
+  for (const image of approved.images) await sharp({ create: { width: 16, height: 9, channels: 3, background: '#ccc' } }).webp().toFile(path.join(root, 'public', image.src));
   const stage = (value: unknown) => fs.writeFileSync(path.join(root, 'content/incoming', `${approved.slug}.json`), JSON.stringify(value));
   stage(approved);
   return { root, recipe: approved, stage, target: path.join(root, 'src/content/recipes', `${approved.slug}.json`) };

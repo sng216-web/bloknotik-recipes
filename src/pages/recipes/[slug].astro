@@ -8,4 +8,4 @@ export function getStaticPaths() { return publishedRecipes().map((recipe) => ({ 
 interface Props { recipe: Recipe }
 const { recipe } = Astro.props;
 ---
-<Base title={recipe.title} description={recipe.description} canonicalPath={`recipes/${recipe.slug}/`} image={recipe.images.find((image) => image.kind === 'cover')!.src} jsonLd={recipeJsonLd(recipe)}><RecipeView recipe={recipe} /></Base>
+<Base title={recipe.editorial?.content.seoTitle ?? recipe.title} description={recipe.description} canonicalPath={`recipes/${recipe.slug}/`} image={recipe.images.find((image) => image.kind === 'cover')!.src} jsonLd={recipeJsonLd(recipe)}><RecipeView recipe={recipe} /></Base>

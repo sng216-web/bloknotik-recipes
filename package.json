@@ -12,12 +12,13 @@
     "preview": "astro preview --host 0.0.0.0",
     "typecheck": "astro check && tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
-    "check": "npm run typecheck && npm test && npm run build && npm run check:output",
+    "check": "npm run contracts:check && npm run typecheck && npm test && npm run build && npm run check:output",
     "check:output": "tsx scripts/check-output.ts",
     "content:import": "tsx scripts/import-content.ts",
     "content:publish": "tsx scripts/release-content.ts",
     "test:browser": "playwright test",
-    "content:import:github": "tsx scripts/github-import.ts"
+    "content:import:github": "tsx scripts/github-import.ts",
+    "contracts:check": "node contracts/check-artifact.mjs"
   },
   "dependencies": {
     "astro": "7.4.0",

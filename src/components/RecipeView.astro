@@ -4,6 +4,8 @@ import { CATEGORIES } from '../lib/recipe-schema';
 import { pathFor } from '../lib/site-config';
 interface Props { recipe: Recipe }
 const { recipe } = Astro.props;
+const editorial = recipe.editorial;
+const clean = recipe.images.find(image => image.kind === 'clean');
 const cover = recipe.images.find((image) => image.kind === 'cover')!;
 const formatDate = (value: string) => new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(value));
 ---
@@ -16,7 +18,11 @@ const formatDate = (value: string) => new Intl.DateTimeFormat('ru-RU', { dateSty
   </header>
   <figure class="recipe-cover"><img src={pathFor(cover.src)} alt={cover.alt} width={cover.width} height={cover.height} fetchpriority="high" /><figcaption>{recipe.demo ? 'Иллюстрация демо, не фотография проверенного рецепта. ' : ''}Фото: {cover.credit}</figcaption></figure>
   <div class="recipe-body"><aside class="ingredients"><span class="eyebrow">Сначала подготовим</span><h2>Ингредиенты</h2><ul>{recipe.ingredients.map((item) => <li><span>{item.name}</span><strong>{item.quantity}</strong></li>)}</ul><p class="ingredients-note">Список для одной закладки. Количества указаны в рецепте.</p></aside>
-    <section class="instructions" id="instructions"><p class="introduction">{recipe.introduction}</p><h2>Готовим шаг за шагом</h2><ol>{recipe.steps.map((step, index) => <li><span class="step-number">{String(index + 1).padStart(2, '0')}</span><div><p>{step.text}</p>{step.tip && <aside class="recipe-tip"><strong>На заметку</strong>{step.tip}</aside>}{recipe.images.filter((image) => image.kind === 'step')[index] && <img class="step-image" src={pathFor(recipe.images.filter((image) => image.kind === 'step')[index]!.src)} alt={recipe.images.filter((image) => image.kind === 'step')[index]!.alt} width={recipe.images.filter((image) => image.kind === 'step')[index]!.width} height={recipe.images.filter((image) => image.kind === 'step')[index]!.height} loading="lazy" />}</div></li>)}</ol>
+    <section class="instructions" id="instructions"><p class="introduction">{recipe.introduction}</p>{editorial?.facts.safety.map(note => <aside class="recipe-tip"><strong>Важно</strong>{note.value}</aside>)}<h2>Готовим шаг за шагом</h2><ol>{recipe.steps.map((step, index) => <li><span class="step-number">{String(index + 1).padStart(2, '0')}</span><div><p>{step.text}</p>{step.tip && <aside class="recipe-tip"><strong>На заметку</strong>{step.tip}</aside>}{recipe.images.filter((image) => image.kind === 'step')[index] && <img class="step-image" src={pathFor(recipe.images.filter((image) => image.kind === 'step')[index]!.src)} alt={recipe.images.filter((image) => image.kind === 'step')[index]!.alt} width={recipe.images.filter((image) => image.kind === 'step')[index]!.width} height={recipe.images.filter((image) => image.kind === 'step')[index]!.height} loading="lazy" />}</div></li>)}</ol>
+    {clean && <img class="step-image" src={pathFor(clean.src)} alt={clean.alt} width={clean.width} height={clean.height} loading="lazy" />}
+    {editorial?.content.narrative.map(paragraph => <p>{paragraph}</p>)}
+    {editorial?.content.tips.map(tip => <aside class="recipe-tip"><strong>На заметку</strong>{tip}</aside>)}
+    {editorial?.content.conclusion && <p>{editorial.content.conclusion}</p>}
     {recipe.sources.length > 0 && <section class="sources"><h2>Источники и полезные ссылки</h2><ul>{recipe.sources.map((source) => <li><a href={source.url} rel="noopener noreferrer">{source.title} ↗︎</a></li>)}</ul></section>}
     </section>
   </div>

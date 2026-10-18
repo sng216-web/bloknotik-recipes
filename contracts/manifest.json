@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "2.0.0",
+  "source": "bloknotik-ai-editorial/contracts/public",
+  "files": {
+    "v2/model.ts": "746d91439074f18658694e3d2eb53a34d94e8ccafd2b0a2dc8e8a2857c3f33c5",
+    "v2/projection.ts": "d8ecdf2107d1d249672f70ed86da139cef1ae1b325b7cf5ff00779da6af13ae2",
+    "v2/recipe.ts": "630ce38517c8faa24b1076b57dad54192da69e6efa70a64ea972b804976346ca",
+    "v2/content-digest.ts": "1b7a96ff546ba229ed39e43825cb139d6062e84d0f5be42bb3353fff07458d68",
+    "v2/events.ts": "eeaf7f9081ad3024536acdf4a806d92e50667e1988b8355f30449e2e6a972cac",
+    "v2/handoff.ts": "8de94efcf4706cd44f96a5d95af0f01cb1bdb360086147766743ee8c24c8f60a",
+    "test-support/fixture.ts": "cd732415c92477929f91152fd8a84add9366d9f62e08d9803e1de4dd9e7ebb8b",
+    "test-support/suite.ts": "57f3e8f087d985b5268a3001c53d690e87019a1d6e0ebadd9d6ca177f8de2873",
+    "check-artifact.mjs": "c146bb9f0b700097b6391c4557ab4099d105294bc6aa55266f5b756be9a11aa6"
+  }
+}
