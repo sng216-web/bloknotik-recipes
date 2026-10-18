@@ -5,8 +5,9 @@ import { load } from 'cheerio';
 import { XMLParser } from 'fast-xml-parser';
 import { SyntaxValidator } from 'fast-xml-validator';
 import { allRecipes, demoRecipes, publishedRecipes } from '../src/lib/catalog.js';
-import { SITE } from '../src/lib/site-config.js';
+import { SITE, absoluteUrl } from '../src/lib/site-config.js';
 import { validateRecipeAssets } from '../src/lib/import-content.js';
+import { validateFeeds } from './validate-feeds.js';
 
 const root = path.resolve('dist');
 const files = fs.readdirSync(root, { recursive: true }).filter((file): file is string => typeof file === 'string');
@@ -15,12 +16,26 @@ for (const filename of htmlFiles) {
   const $ = load(fs.readFileSync(path.join(root, filename), 'utf8'));
   assert.equal($('h1').length, 1, `One H1 required: ${filename}`);
   const canonical = $('link[rel=canonical]').attr('href');
-  assert.ok(canonical?.startsWith(SITE.url), `Invalid canonical: ${filename}`);
+  const route = filename === 'index.html' ? '' : filename.replace(/index\.html$/, '');
+  assert.equal($('link[rel=canonical]').length, 1);
+  assert.equal(canonical, absoluteUrl(route), `Invalid canonical: ${filename}`);
+  assert.equal($('meta[property="og:url"]').attr('content'), canonical);
+  assert.equal($('html').attr('lang'), 'ru');
   assert.ok($('meta[name=description]').attr('content'), `Description required: ${filename}`);
   assert.ok($('meta[property="og:image"]').attr('content')?.startsWith(SITE.url));
   if (filename.startsWith('demo/')) {
     assert.match($('meta[name=robots]').attr('content') ?? '', /noindex/);
     assert.equal($('script[type="application/ld+json"]').length, 0);
+  }
+  if (filename === 'search/index.html' || filename === '404.html') assert.match($('meta[name=robots]').attr('content') ?? '', /noindex/);
+  const recipe = publishedRecipes().find((entry) => filename === `recipes/${entry.slug}/index.html`);
+  const structured = $('script[type="application/ld+json"]');
+  assert.equal(structured.length, recipe ? 1 : 0);
+  if (recipe) {
+    const data = JSON.parse(structured.text());
+    assert.equal(data['@type'], 'Recipe'); assert.equal(data.name, recipe.title); assert.equal(data.url, canonical);
+    assert.equal(data.recipeIngredient.length, recipe.ingredients.length); assert.equal(data.recipeInstructions.length, recipe.steps.length);
+    assert.ok(!('aggregateRating' in data) && !('review' in data));
   }
   $('a[href],img[src],script[src],link[rel=stylesheet]').each((_index, element) => {
     const attribute = $(element).attr('href') ?? $(element).attr('src');
@@ -40,6 +55,11 @@ for (const filename of htmlFiles) {
 }
 const feed = fs.readFileSync('dist/rss.xml', 'utf8');
 const sitemap = fs.readFileSync('dist/sitemap.xml', 'utf8');
+validateFeeds(feed, sitemap, allRecipes());
+const robots = fs.readFileSync('dist/robots.txt', 'utf8');
+assert.match(robots, /^User-agent: \*/m);
+assert.ok(robots.includes(`Sitemap: ${absoluteUrl('sitemap.xml')}`));
+assert.doesNotMatch(robots, /^Disallow:\s*\/\s*$/m);
 assert.equal(SyntaxValidator.validate(feed), true); assert.equal(SyntaxValidator.validate(sitemap), true);
 const channel = new XMLParser().parse(feed).rss.channel as { item?: unknown | unknown[] };
 const items = channel.item ? (Array.isArray(channel.item) ? channel.item : [channel.item]) : [];

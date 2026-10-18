@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { RecipeSchema, isPublished, type Recipe } from './recipe-schema.js';
+import { assertNotFixture } from './import-content.js';
 
 export function validateCatalog(input: unknown[]): Recipe[] {
   const recipes = input.map((entry) => RecipeSchema.parse(entry));
@@ -25,6 +26,7 @@ function readDirectory(directory: string): Recipe[] {
 export function allRecipes(): Recipe[] {
   const recipes = readDirectory('src/content/recipes');
   if (recipes.some((recipe) => recipe.demo)) throw new Error('Demo fixtures belong outside the publication catalog');
+  for (const recipe of recipes) assertNotFixture(recipe, fs.realpathSync(process.cwd()));
   return recipes;
 }
 

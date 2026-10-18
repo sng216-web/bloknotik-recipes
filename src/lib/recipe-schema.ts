@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { contentDigest } from './content-digest.js';
 
-const text = z.string().trim().min(1);
+export const XML_UNSAFE = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]|\p{Surrogate}/u;
+const text = z.string().trim().min(1).refine((value) => !XML_UNSAFE.test(value), 'Text contains characters forbidden by XML 1.0');
 const timestamp = z.iso.datetime({ offset: true });
 const httpsUrl = z.url({ protocol: /^https$/ }).refine((value) => {
   try {
@@ -37,6 +39,7 @@ export const ApprovalSchema = z.strictObject({
   revision: z.number().int().positive(),
   reviewer: text,
   approvedAt: timestamp,
+  contentDigest: z.string().regex(/^[a-f0-9]{64}$/),
   checks: z.strictObject({
     completeness: z.literal(true), cookingLogic: z.literal(true), foodSafety: z.literal(true),
     originality: z.literal(true), facts: z.literal(true), mediaRights: z.literal(true),
@@ -74,14 +77,18 @@ export const RecipeSchema = z.strictObject({
   if (new Set(recipe.images.map((image) => image.src)).size !== recipe.images.length) issue('Duplicate images');
   if (Date.parse(recipe.dates.updated) < Date.parse(recipe.dates.created)) issue('Updated date precedes creation');
   if (recipe.demo && recipe.status !== 'draft') issue('Demo fixtures must remain drafts');
+  if (!recipe.demo && (recipe.id.startsWith('demo-') || recipe.tags.some((tag) => /^(?:demo|демонстрация)$/iu.test(tag)))) {
+    issue('Reserved demo identifiers/tags cannot be turned into real content');
+  }
   if (recipe.status === 'approved' || recipe.status === 'published') {
     if (!recipe.approval || recipe.approval.revision !== recipe.revision) issue('Approval must match this revision');
+    if (recipe.approval && recipe.approval.contentDigest !== contentDigest(recipe)) issue('Approval content digest does not match the reviewed material');
     if (!recipe.sources.length) issue('Approved content requires sources');
     if (recipe.approval && (Date.parse(recipe.approval.approvedAt) > Date.parse(recipe.dates.updated) ||
         Date.parse(recipe.approval.approvedAt) < Date.parse(recipe.dates.created))) issue('Invalid approval chronology');
   }
   if (recipe.status === 'published' && !recipe.dates.published) issue('Published recipes need a confirmed publication date');
-  if (recipe.status !== 'published' && recipe.dates.published !== null) issue('Unpublished content cannot have a publication date');
+  if (!['published', 'archived'].includes(recipe.status) && recipe.dates.published !== null) issue('Unpublished content cannot have a publication date');
   if (recipe.dates.published && (Date.parse(recipe.dates.published) < Date.parse(recipe.dates.created) ||
       Date.parse(recipe.dates.published) > Date.parse(recipe.dates.updated))) issue('Invalid publication chronology');
 });
@@ -89,7 +96,10 @@ export const RecipeSchema = z.strictObject({
 export type Recipe = z.infer<typeof RecipeSchema>;
 export type Category = z.infer<typeof CategorySchema>;
 
-export function isPublished(recipe: Recipe, now = new Date()): boolean {
+export function isPublished(input: unknown, now = new Date()): input is Recipe {
+  const parsed = RecipeSchema.safeParse(input);
+  if (!parsed.success || !Number.isFinite(now.getTime())) return false;
+  const recipe = parsed.data;
   return recipe.status === 'published' && !recipe.demo && recipe.approval !== null &&
     recipe.approval.revision === recipe.revision && recipe.dates.published !== null &&
     Date.parse(recipe.dates.published) <= now.getTime() && Date.parse(recipe.dates.updated) <= now.getTime();

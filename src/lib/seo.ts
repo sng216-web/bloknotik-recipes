@@ -1,5 +1,6 @@
 import { absoluteUrl, SITE } from './site-config.js';
-import { CATEGORIES, isPublished, type Recipe } from './recipe-schema.js';
+import { CATEGORIES, isPublished, XML_UNSAFE, type Recipe } from './recipe-schema.js';
+import { validateCatalog } from './catalog.js';
 
 export function recipeJsonLd(recipe: Recipe): Record<string, unknown> | null {
   if (!isPublished(recipe)) return null;
@@ -31,10 +32,12 @@ export function safeJson(value: unknown): string {
 }
 
 export function xml(value: string): string {
+  if (XML_UNSAFE.test(value)) throw new Error('Unsafe XML 1.0 character');
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
 export function rssXml(recipes: Recipe[], now = new Date()): string {
+  validateCatalog(recipes);
   const items = recipes.filter((recipe) => isPublished(recipe, now)).map((recipe) => {
     const url = xml(absoluteUrl(`recipes/${recipe.slug}/`));
     return `<item><title>${xml(recipe.title)}</title><link>${url}</link><guid isPermaLink="true">${url}</guid><description>${xml(recipe.description)}</description><category>${xml(CATEGORIES[recipe.category].title)}</category><pubDate>${new Date(recipe.dates.published!).toUTCString()}</pubDate></item>`;
@@ -43,6 +46,7 @@ export function rssXml(recipes: Recipe[], now = new Date()): string {
 }
 
 export function sitemapXml(recipes: Recipe[], now = new Date()): string {
+  validateCatalog(recipes);
   const paths = ['', 'categories/', 'about/', ...Object.keys(CATEGORIES).map((category) => `categories/${category}/`)];
   const entries = paths.map((path) => `<url><loc>${xml(absoluteUrl(path))}</loc></url>`);
   for (const recipe of recipes.filter((entry) => isPublished(entry, now))) {

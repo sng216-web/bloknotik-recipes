@@ -1,10 +1,10 @@
 # Проверка реализации
 
-Локальная проверка выполнена 2026-10-17/18 UTC, Node.js 24.
+Локальная проверка обновлена техническим аудитом 2026-10-18 UTC, Node.js 24. Полные результаты и ограничения — в [launch-readiness.md](launch-readiness.md).
 
 - Чистая установка `npm ci --ignore-scripts` успешна.
-- `npm run check`: Astro/TypeScript, 10 unit-тестов, static build и проверка результата сборки.
-- `CI=true npm run test:browser`: 8 успешных browser-тестов в Chromium, desktop и mobile. Preview запущен в foreground, как в CI.
+- `npm run check`: Astro/TypeScript, 28 unit-тестов, static build и проверка результата сборки.
+- `CI=true npm run test:browser`: 14 успешных browser-тестов в Chromium, desktop и mobile. Preview запущен в foreground, как в CI.
 - Проверены меню и навигация, отсутствие горизонтального переполнения, демо-предупреждения и noindex, поиск по русскому тексту, категории поиска и безопасный вывод входного текста.
 - Axe не выявил нарушений на главной и странице рецепта в проверенных viewport. Это автоматическая проверка выбранных страниц, а не полная сертификация доступности.
 - Проверены 14 HTML-страниц, внутренние ссылки и anchors, canonical/Open Graph, синтаксис XML, соответствие публичных индексов каталогу, реальные размеры изображений.

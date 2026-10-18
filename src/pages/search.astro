@@ -12,7 +12,7 @@ import { pathFor } from '../lib/site-config';
   </section>
 </Base>
 <script>
-  interface SearchEntry { title: string; description: string; category: string; categoryTitle: string; href: string; image: string; searchText: string }
+  import { parseSearchIndex, type SearchEntry } from '../lib/search-index';
   const root = document.querySelector<HTMLElement>('[data-search]')!;
   const form = root.querySelector<HTMLFormElement>('form')!;
   const query = root.querySelector<HTMLInputElement>('#query')!;
@@ -21,7 +21,9 @@ import { pathFor } from '../lib/site-config';
   const status = root.querySelector<HTMLElement>('[role="status"]')!;
   const normalize = (value: string) => value.toLocaleLowerCase('ru-RU').replaceAll('ё', 'е').trim();
   let entries: SearchEntry[] = [];
+  let ready = false;
   function render() {
+    if (!ready) return;
     const tokens = normalize(query.value).split(/\s+/).filter(Boolean);
     const matches = entries.filter((entry) => (!category.value || category.value === entry.category) && tokens.every((token) => normalize(entry.searchText).includes(token)));
     results.replaceChildren();
@@ -45,7 +47,9 @@ import { pathFor } from '../lib/site-config';
   try {
     const response = await fetch(root.dataset['indexUrl']!);
     if (!response.ok) throw new Error('Search index unavailable');
-    entries = await response.json() as SearchEntry[];
+    const indexPath = root.dataset['indexUrl']!;
+    entries = parseSearchIndex(await response.json(), indexPath.slice(0, -'search-index.json'.length));
+    ready = true;
     render();
   } catch {
     status.textContent = 'Не удалось загрузить поиск. Попробуйте обновить страницу или откройте категории.';

@@ -15,7 +15,7 @@
     "check": "npm run typecheck && npm test && npm run build && npm run check:output",
     "check:output": "tsx scripts/check-output.ts",
     "content:import": "tsx scripts/import-content.ts",
-    "content:publish": "tsx scripts/publish-content.ts",
+    "content:publish": "tsx scripts/release-content.ts",
     "test:browser": "playwright test",
     "content:import:github": "tsx scripts/github-import.ts"
   },

@@ -59,6 +59,8 @@ tests/                     unit и browser-тесты
 
 Полный контракт — [docs/content.md](docs/content.md). Обязательны slug, title, description, introduction, ingredients, steps, images, dates, category, status, revision, demo, sources и approval. Для approved/published требуется положительный QA той же revision. Любое изменение содержания требует новой revision и нового review.
 
+`approval.contentDigest` связывает QA с SHA-256 конкретного редакционного содержимого. Импорт и подготовка публикации проверяют hash и никогда не исправляют его автоматически. Повтор подготовки идентичного выпуска идемпотентен; другая дата, устаревшая revision или изменённый после QA материал отклоняются.
+
 Время, порции и калорийность необязательны и принимаются только с `confirmed: true`. Рейтинги и отзывы не моделируются. Schema.org Recipe создаётся только для опубликованных подтверждённых материалов; демо не получают никакой разметки Recipe.
 
 RSS (`/rss.xml`) содержит только опубликованные статьи с постоянными абсолютными URL и действительными датами. Пока он пустой и валидный. Sitemap содержит настоящие страницы сайта и только реальные публикации; поиск использует отдельный статический индекс, исключающий демо, approved, draft, archived и будущие публикации. При подкаталоге Pages все пути, включая RSS, находятся внутри него.
@@ -87,3 +89,4 @@ npm run content:publish -- --slug REAL_SLUG --published-at CONFIRMED_ISO_TIMESTA
 - `pages.yml`: проверка статической сборки и деплой только из main после merge, через pages/id-token права.
 - `import-content.yml`: только staging и PR, без auto-merge.
 - [Хостинг и исходное состояние](docs/hosting.md), [контент](docs/content.md), [импорт](docs/import.md), [изображения](docs/assets.md), [правила](AGENTS.md).
+- [Технический аудит и готовность к запуску](docs/launch-readiness.md): найденные и исправленные ошибки, реальные HTTP-ответы и условия безопасного выпуска.
