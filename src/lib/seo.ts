@@ -7,7 +7,7 @@ export function recipeJsonLd(recipe: Recipe): Record<string, unknown> | null {
   const result: Record<string, unknown> = {
     '@context': 'https://schema.org', '@type': 'Recipe', name: recipe.title,
     description: recipe.description, url: absoluteUrl(`recipes/${recipe.slug}/`),
-    image: recipe.images.map((image) => absoluteUrl(image.src)),
+    image: recipe.images.filter(image => image.kind === 'clean').map((image) => absoluteUrl(image.src)),
     datePublished: recipe.dates.published, dateModified: recipe.dates.updated,
     author: { '@type': 'Organization', name: SITE.name },
     recipeCategory: CATEGORIES[recipe.category].title,

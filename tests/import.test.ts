@@ -10,8 +10,8 @@ import { approvedFixture, demoFixture, publishedFixture, reseal } from './helper
 async function testWorkspace() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bloknotik-import-'));
   fs.mkdirSync(path.join(root, 'public/images'), { recursive: true });
-  let recipe = approvedFixture(); recipe.images = recipe.images.map((image) => ({ ...image, width: 16, height: 10 })); recipe = reseal(recipe);
-  await sharp({ create: { width: 16, height: 10, channels: 3, background: '#ccc' } }).webp().toFile(path.join(root, 'public', recipe.images[0]!.src));
+  let recipe = approvedFixture(); recipe.images = recipe.images.map((image) => ({ ...image, width: 16, height: 9 })); recipe = reseal(recipe);
+  for (const image of recipe.images) await sharp({ create: { width: 16, height: 9, channels: 3, background: '#ccc' } }).webp().toFile(path.join(root, 'public', image.src));
   return { root, envelope: { schemaVersion: '1' as const, importId: '00000000-0000-4000-8000-000000000001', recipe } };
 }
 
@@ -40,7 +40,7 @@ test('actual image dimensions and symlink boundaries are verified before content
   const { root, envelope } = await testWorkspace();
   const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'bloknotik-outside-'));
   try {
-    const invalid = structuredClone(envelope); invalid.recipe.images[0]!.width = 100;
+    const invalid = structuredClone(envelope); invalid.recipe.images[0]!.width = 32; invalid.recipe.images[0]!.height = 18;
     invalid.recipe = reseal(invalid.recipe);
     await assert.rejects(importApprovedContent(invalid, root), /dimensions/);
     fs.symlinkSync(outside, path.join(root, 'content'));
@@ -68,7 +68,7 @@ test('future approvals and EXIF-rotated portrait images cannot enter staging', a
     await assert.rejects(importApprovedContent(future, root, new Date('2026-10-18T00:00:00Z')), /future/);
     const rotated = structuredClone(envelope);
     rotated.recipe.images[0]!.src = '/images/rotated.jpg'; rotated.recipe = reseal(rotated.recipe);
-    await sharp({ create: { width: 16, height: 10, channels: 3, background: '#ccc' } }).withMetadata({ orientation: 6 }).jpeg().toFile(path.join(root, 'public/images/rotated.jpg'));
+    await sharp({ create: { width: 16, height: 9, channels: 3, background: '#ccc' } }).withMetadata({ orientation: 6 }).jpeg().toFile(path.join(root, 'public/images/rotated.jpg'));
     await assert.rejects(importApprovedContent(rotated, root), /orientation/);
     assert.equal(fs.existsSync(path.join(root, 'content')), false);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }

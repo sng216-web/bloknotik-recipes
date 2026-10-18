@@ -26,6 +26,12 @@ export async function validateRecipeAssets(recipe: Recipe, root: string): Promis
     if (!fs.statSync(real).isFile()) throw new Error('Images must be regular files');
     if (fs.statSync(real).size > 10 * 1024 * 1024) throw new Error('Images may not exceed 10 MiB');
     const metadata = await sharp(real, { limitInputPixels: 40_000_000 }).metadata();
+    const ext = image.src.split('.').pop();
+    const expectedFormat = ext === 'jpg' ? 'jpeg' : ext;
+    if (metadata.format !== expectedFormat && !(expectedFormat === 'avif' && metadata.format === 'heif' && metadata.compression === 'av1')) {
+      throw new Error(`Actual image type does not match ${image.src}`);
+    }
+    if (!recipe.demo && image.kind === 'cover' && image.width * 9 !== image.height * 16) throw new Error('Cover must be 16:9');
     if (metadata.orientation && metadata.orientation >= 5) throw new Error('Image orientation must be normalized to landscape');
     if (metadata.width !== image.width || metadata.height !== image.height || metadata.width <= metadata.height) {
       throw new Error(`Actual image dimensions do not match ${image.src}`);
@@ -82,41 +88,45 @@ export async function importApprovedContent(input: unknown, root = process.cwd()
   assertNotFixture(envelope.recipe, realRoot);
   const digest = createHash('sha256').update(JSON.stringify(envelope)).digest('hex');
   await validateRecipeAssets(envelope.recipe, realRoot);
-  const ledger = ensureDirectory(realRoot, 'content/imports');
-  const incoming = ensureDirectory(realRoot, 'content/incoming');
-  const marker = path.join(ledger, `${envelope.importId}.json`);
-  const target = path.join(incoming, `${envelope.recipe.slug}.json`);
-  if (fs.existsSync(marker)) {
-    if (fs.lstatSync(marker).isSymbolicLink()) throw new Error('Invalid import ledger file');
-    const previous = JSON.parse(fs.readFileSync(marker, 'utf8')) as { digest?: string };
-    if (previous.digest !== digest) throw new Error('Idempotency conflict: importId was used for a different payload');
-    if (!fs.existsSync(target) || fs.lstatSync(target).isSymbolicLink()) throw new Error('Staging content is missing; reconcile the import');
-    const staged = RecipeSchema.parse(JSON.parse(fs.readFileSync(target, 'utf8')));
-    if (staged.id !== envelope.recipe.id || staged.slug !== envelope.recipe.slug || staged.revision < envelope.recipe.revision ||
-        (staged.revision === envelope.recipe.revision && JSON.stringify(staged) !== JSON.stringify(envelope.recipe))) {
-      throw new Error('Staging content conflicts with the recorded import');
-    }
-    return { state: 'unchanged' as const, slug: envelope.recipe.slug, importId: envelope.importId };
-  }
-  for (const directory of [incoming, path.join(realRoot, 'src/content/recipes')]) {
-    if (!fs.existsSync(directory)) continue;
-    for (const filename of fs.readdirSync(directory).filter((name) => name.endsWith('.json'))) {
-      const candidate = path.join(directory, filename);
-      if (fs.lstatSync(candidate).isSymbolicLink()) throw new Error('Content symlinks are not allowed');
-      const previous = RecipeSchema.parse(JSON.parse(fs.readFileSync(candidate, 'utf8')));
-      if ((previous.slug === envelope.recipe.slug && previous.id !== envelope.recipe.id) ||
-          (previous.id === envelope.recipe.id && previous.slug !== envelope.recipe.slug)) {
-        throw new Error('Recipe identity and permanent slug cannot be reassigned');
+  const lock = path.join(realRoot, '.content-import.lock');
+  const descriptor = fs.openSync(lock, 'wx', 0o600);
+  try {
+    const ledger = ensureDirectory(realRoot, 'content/imports');
+    const incoming = ensureDirectory(realRoot, 'content/incoming');
+    const marker = path.join(ledger, `${envelope.importId}.json`);
+    const target = path.join(incoming, `${envelope.recipe.slug}.json`);
+    if (fs.existsSync(marker)) {
+      if (fs.lstatSync(marker).isSymbolicLink()) throw new Error('Invalid import ledger file');
+      const previous = JSON.parse(fs.readFileSync(marker, 'utf8')) as { digest?: string };
+      if (previous.digest !== digest) throw new Error('Idempotency conflict: importId was used for a different payload');
+      if (!fs.existsSync(target) || fs.lstatSync(target).isSymbolicLink()) throw new Error('Staging content is missing; reconcile the import');
+      const staged = RecipeSchema.parse(JSON.parse(fs.readFileSync(target, 'utf8')));
+      if (staged.id !== envelope.recipe.id || staged.slug !== envelope.recipe.slug || staged.revision < envelope.recipe.revision ||
+          (staged.revision === envelope.recipe.revision && JSON.stringify(staged) !== JSON.stringify(envelope.recipe))) {
+        throw new Error('Staging content conflicts with the recorded import');
       }
-      if (previous.id === envelope.recipe.id && previous.revision >= envelope.recipe.revision) {
-        // A crash after staging but before its ledger write is safely recoverable.
-        if (directory === incoming && JSON.stringify(previous) === JSON.stringify(envelope.recipe)) continue;
-        throw new Error('Content revision must increase');
+      return { state: 'unchanged' as const, slug: envelope.recipe.slug, importId: envelope.importId };
+    }
+    for (const directory of [incoming, path.join(realRoot, 'src/content/recipes')]) {
+      if (!fs.existsSync(directory)) continue;
+      for (const filename of fs.readdirSync(directory).filter((name) => name.endsWith('.json'))) {
+        const candidate = path.join(directory, filename);
+        if (fs.lstatSync(candidate).isSymbolicLink()) throw new Error('Content symlinks are not allowed');
+        const previous = RecipeSchema.parse(JSON.parse(fs.readFileSync(candidate, 'utf8')));
+        if ((previous.slug === envelope.recipe.slug && previous.id !== envelope.recipe.id) ||
+            (previous.id === envelope.recipe.id && previous.slug !== envelope.recipe.slug)) {
+          throw new Error('Recipe identity and permanent slug cannot be reassigned');
+        }
+        if (previous.id === envelope.recipe.id && previous.revision >= envelope.recipe.revision) {
+          // A crash after staging but before its ledger write is safely recoverable.
+          if (directory === incoming && JSON.stringify(previous) === JSON.stringify(envelope.recipe)) continue;
+          throw new Error('Content revision must increase');
+        }
       }
     }
-  }
-  atomicWrite(target, envelope.recipe);
-  atomicWrite(marker, { schemaVersion: '1', importId: envelope.importId, digest,
-    articleId: envelope.recipe.id, slug: envelope.recipe.slug, revision: envelope.recipe.revision });
-  return { state: 'imported' as const, slug: envelope.recipe.slug, importId: envelope.importId };
+    atomicWrite(target, envelope.recipe);
+    atomicWrite(marker, { schemaVersion: '1', importId: envelope.importId, digest,
+      articleId: envelope.recipe.id, slug: envelope.recipe.slug, revision: envelope.recipe.revision });
+    return { state: 'imported' as const, slug: envelope.recipe.slug, importId: envelope.importId };
+  } finally { fs.closeSync(descriptor); fs.unlinkSync(lock); }
 }

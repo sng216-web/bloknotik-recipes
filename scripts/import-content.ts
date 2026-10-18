@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { parseArgs } from 'node:util';
+import { normalizeEditorialImport } from '../src/lib/editorial-contract.js';
 import { importApprovedContent } from '../src/lib/import-content.js';
 
 const { values } = parseArgs({ options: { file: { type: 'string' }, 'github-event': { type: 'string' } } });
@@ -12,4 +13,4 @@ if (values['github-event']) {
   const event = data as { inputs?: { payload?: string }; client_payload?: unknown };
   payload = event.inputs?.payload ? JSON.parse(event.inputs.payload) : event.client_payload;
 }
-console.log(JSON.stringify(await importApprovedContent(payload)));
+console.log(JSON.stringify(await importApprovedContent(normalizeEditorialImport(payload))));
