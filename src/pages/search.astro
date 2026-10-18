@@ -1,0 +1,57 @@
+---
+import Base from '../layouts/Base.astro';
+import { CATEGORIES } from '../lib/recipe-schema';
+import { pathFor } from '../lib/site-config';
+---
+<Base title="Поиск рецептов" canonicalPath="search/" noindex description="Поиск только по опубликованным материалам Блокнотика.">
+  <section class="container page-intro"><span class="eyebrow">Найдём что-нибудь вкусное</span><h1>Что у вас на уме?</h1><p class="lead">Название, продукт или настроение.<br />Ищем только среди опубликованных рецептов.</p></section>
+  <section class="container search-section" data-search data-index-url={pathFor('search-index.json')}>
+    <form class="search-form" role="search"><div><label for="query">Название или ингредиент</label><input id="query" name="q" type="search" placeholder="Например, тыква или завтрак" autocomplete="off" /></div><div><label for="category">Категория</label><select id="category" name="category"><option value="">Все категории</option>{Object.entries(CATEGORIES).map(([slug, info]) => <option value={slug}>{info.title}</option>)}</select></div><button class="button" type="submit">Найти ↗︎</button></form>
+    <p class="search-status" role="status" aria-live="polite">Загружаем список опубликованных рецептов…</p><div class="recipe-grid" id="search-results"></div>
+    <noscript><p>Для поиска нужен JavaScript. Все опубликованные материалы также доступны в <a href={pathFor('categories/')}>категориях</a>.</p></noscript>
+  </section>
+</Base>
+<script>
+  import { parseSearchIndex, type SearchEntry } from '../lib/search-index';
+  const root = document.querySelector<HTMLElement>('[data-search]')!;
+  const form = root.querySelector<HTMLFormElement>('form')!;
+  const query = root.querySelector<HTMLInputElement>('#query')!;
+  const category = root.querySelector<HTMLSelectElement>('#category')!;
+  const results = root.querySelector<HTMLElement>('#search-results')!;
+  const status = root.querySelector<HTMLElement>('[role="status"]')!;
+  const normalize = (value: string) => value.toLocaleLowerCase('ru-RU').replaceAll('ё', 'е').trim();
+  let entries: SearchEntry[] = [];
+  let ready = false;
+  function render() {
+    if (!ready) return;
+    const tokens = normalize(query.value).split(/\s+/).filter(Boolean);
+    const matches = entries.filter((entry) => (!category.value || category.value === entry.category) && tokens.every((token) => normalize(entry.searchText).includes(token)));
+    results.replaceChildren();
+    for (const entry of matches) {
+      const article = document.createElement('article'); article.className = 'recipe-card';
+      const image = document.createElement('img'); image.src = entry.image; image.alt = ''; image.loading = 'lazy'; image.width = 1600; image.height = 1000;
+      const figure = document.createElement('div'); figure.className = 'card-image'; figure.append(image);
+      const meta = document.createElement('div'); meta.className = 'card-meta'; meta.textContent = entry.categoryTitle;
+      const heading = document.createElement('h2'); const link = document.createElement('a'); link.href = entry.href; link.textContent = entry.title; heading.append(link);
+      const description = document.createElement('p'); description.textContent = entry.description;
+      article.append(figure, meta, heading, description); results.append(article);
+    }
+    status.textContent = entries.length === 0 ? 'Опубликованных рецептов пока нет. Демонстрации в поиск не включаются.' :
+      matches.length ? `Найдено материалов: ${matches.length}` : 'Ничего не нашли. Попробуйте другое слово или категорию.';
+    const params = new URLSearchParams(); if (query.value.trim()) params.set('q', query.value.trim()); if (category.value) params.set('category', category.value);
+    history.replaceState(null, '', `${location.pathname}${params.size ? `?${params.toString()}` : ''}`);
+  }
+  const initial = new URLSearchParams(location.search); query.value = initial.get('q') ?? ''; category.value = initial.get('category') ?? '';
+  form.addEventListener('submit', (event) => { event.preventDefault(); render(); });
+  query.addEventListener('input', render); category.addEventListener('change', render);
+  try {
+    const response = await fetch(root.dataset['indexUrl']!);
+    if (!response.ok) throw new Error('Search index unavailable');
+    const indexPath = root.dataset['indexUrl']!;
+    entries = parseSearchIndex(await response.json(), indexPath.slice(0, -'search-index.json'.length));
+    ready = true;
+    render();
+  } catch {
+    status.textContent = 'Не удалось загрузить поиск. Попробуйте обновить страницу или откройте категории.';
+  }
+</script>

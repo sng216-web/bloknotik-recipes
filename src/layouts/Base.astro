@@ -1,0 +1,78 @@
+---
+import '../styles/global.css';
+import { SITE, absoluteUrl, pathFor } from '../lib/site-config';
+import { safeJson } from '../lib/seo';
+interface Props {
+  title?: string;
+  description?: string;
+  canonicalPath?: string;
+  image?: string;
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown> | null;
+}
+const { title = 'Простые продукты. Тёплые истории.', description = SITE.description,
+  canonicalPath = '', image = '/images/kitchen.webp', noindex = false, jsonLd } = Astro.props;
+const pageTitle = `${title} · ${SITE.name}`;
+const current = Astro.url.pathname;
+---
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f6f3eb" />
+    <meta name="robots" content={noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'} />
+    <link rel="canonical" href={absoluteUrl(canonicalPath)} />
+    <link rel="icon" type="image/svg+xml" href={pathFor('favicon.svg')} />
+    <link rel="alternate" type="application/rss+xml" title="Блокнотик: новые рецепты" href={pathFor('rss.xml')} />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:type" content={jsonLd ? 'article' : 'website'} />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={absoluteUrl(canonicalPath)} />
+    <meta property="og:image" content={absoluteUrl(image)} />
+    <meta property="og:image:alt" content={title} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={absoluteUrl(image)} />
+    {jsonLd && <script type="application/ld+json" set:html={safeJson(jsonLd)} />}
+  </head>
+  <body>
+    <a href="#main" class="skip-link">Перейти к содержимому</a>
+    <header class="header">
+      <div class="top-note">Хорошая еда начинается с простых вещей</div>
+      <div class="container header-inner">
+        <a class="brand" href={pathFor()}>
+          <svg viewBox="0 0 40 44" aria-hidden="true"><rect x="7" y="3" width="29" height="38" rx="5" fill="currentColor"/><path d="M15 3v38M21 15h9M21 22h9M21 29h6M3 11h8M3 21h8M3 31h8" stroke="#f6f3eb" stroke-width="2" fill="none"/></svg>
+          <span>блокнотик<span class="brand-sub">рецепты для жизни</span></span>
+        </a>
+        <nav class="desktop-nav" aria-label="Основная навигация">
+          <a href={pathFor()} aria-current={current === pathFor() ? 'page' : undefined}>Главная</a>
+          <a href={pathFor('categories/')} aria-current={current.includes('/categories/') ? 'page' : undefined}>Рецепты</a>
+          <a href={pathFor('about/')} aria-current={current.includes('/about/') ? 'page' : undefined}>О проекте</a>
+        </nav>
+        <a class="search-link" href={pathFor('search/')} aria-label="Найти рецепт"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 6 6"/></svg><span>Найти рецепт</span></a>
+        <details class="mobile-menu">
+          <summary aria-label="Открыть меню"><span></span><span></span><span></span></summary>
+          <nav aria-label="Мобильная навигация">
+            <a href={pathFor()}>Главная</a><a href={pathFor('categories/')}>Рецепты и категории</a>
+            <a href={pathFor('search/')}>Поиск</a><a href={pathFor('about/')}>О проекте</a>
+          </nav>
+        </details>
+      </div>
+    </header>
+    <main id="main" tabindex="-1"><slot /></main>
+    <footer class="footer">
+      <div class="container footer-main">
+        <div><a class="footer-brand" href={pathFor()}>блокнотик<span>✳︎</span></a><p>Место для рецептов,<br />к которым хочется возвращаться.</p></div>
+        <nav aria-label="Навигация в подвале"><a href={pathFor('categories/')}>Все категории</a><a href={pathFor('about/')}>Наш подход</a><a href={pathFor('search/')}>Поиск рецептов</a><a href={pathFor('rss.xml')}>RSS новых публикаций ↗︎</a></nav>
+        <div class="footer-note"><span class="eyebrow">На полях блокнота</span><p>Готовить с вниманием.<br />Делиться с теплом.</p></div>
+      </div>
+      <div class="container footer-bottom"><span>© {new Date().getUTCFullYear()} Блокнотик</span><span>Сделано с любовью к домашней еде</span></div>
+    </footer>
+  </body>
+</html>

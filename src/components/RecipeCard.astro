@@ -1,0 +1,19 @@
+---
+import type { Recipe } from '../lib/recipe-schema';
+import { CATEGORIES } from '../lib/recipe-schema';
+import { pathFor } from '../lib/site-config';
+interface Props { recipe: Recipe }
+const { recipe } = Astro.props;
+const cover = recipe.images.find((image) => image.kind === 'cover')!;
+const href = pathFor(`${recipe.demo ? 'demo' : 'recipes'}/${recipe.slug}/`);
+---
+<article class="recipe-card">
+  <a class="card-image" href={href} tabindex="-1" aria-hidden="true">
+    <img src={pathFor(cover.src)} alt="" width={cover.width} height={cover.height} loading="lazy" decoding="async" />
+    {recipe.demo && <span class="demo-badge">Демо · не публикация</span>}
+    <span class="card-arrow">↗︎</span>
+  </a>
+  <div class="card-meta">{CATEGORIES[recipe.category].title}{recipe.details.cookMinutes && <span>{recipe.details.cookMinutes.value} мин</span>}</div>
+  <h3><a href={href}>{recipe.title}</a></h3>
+  <p>{recipe.description}</p>
+</article>

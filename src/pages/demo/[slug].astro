@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import RecipeView from '../../components/RecipeView.astro';
+import { demoRecipes } from '../../lib/catalog';
+import type { Recipe } from '../../lib/recipe-schema';
+export function getStaticPaths() { return demoRecipes().map((recipe) => ({ params: { slug: recipe.slug }, props: { recipe } })); }
+interface Props { recipe: Recipe }
+const { recipe } = Astro.props;
+---
+<Base title={`Демо: ${recipe.title}`} description="Демонстрация интерфейса Блокнотика. Материал не является опубликованным или проверенным рецептом." canonicalPath={`demo/${recipe.slug}/`} image={recipe.images[0]!.src} noindex><RecipeView recipe={recipe} /></Base>

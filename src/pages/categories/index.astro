@@ -1,0 +1,11 @@
+---
+import Base from '../../layouts/Base.astro';
+import { CATEGORIES } from '../../lib/recipe-schema';
+import { publishedRecipes } from '../../lib/catalog';
+import { pathFor } from '../../lib/site-config';
+const recipes = publishedRecipes();
+---
+<Base title="Категории рецептов" canonicalPath="categories/" description="Все рубрики Блокнотика: завтраки, супы, основные блюда, салаты, выпечка и десерты.">
+  <section class="container page-intro"><span class="eyebrow">Разложим по полочкам</span><h1>Что будем готовить?</h1><p class="lead">От первого завтрака до последнего кусочка пирога.<br />Выберите настроение для вашей кухни.</p></section>
+  <section class="container category-grid" aria-label="Все категории">{Object.entries(CATEGORIES).map(([slug, category]) => <a class="category-tile" href={pathFor(`categories/${slug}/`)}><span class="category-symbol" aria-hidden="true">{category.symbol}</span><span class="category-count">{recipes.filter((recipe) => recipe.category === slug).length} рецептов</span><h2>{category.title}</h2><p>{category.description}</p><span class="text-link">Открыть категорию ↗︎</span></a>)}</section>
+</Base>
