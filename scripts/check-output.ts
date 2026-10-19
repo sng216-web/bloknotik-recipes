@@ -13,6 +13,11 @@ const root = path.resolve('dist');
 const files = fs.readdirSync(root, { recursive: true }).filter((file): file is string => typeof file === 'string');
 const htmlFiles = files.filter((file) => file.endsWith('.html'));
 for (const filename of htmlFiles) {
+  // Search Console verification is a plain-text HTML file, not an Astro page.
+  if (filename === 'google970d70d24e4d1602.html') {
+    assert.equal(fs.readFileSync(path.join(root, filename), 'utf8').trim(), 'google-site-verification: google970d70d24e4d1602.html');
+    continue;
+  }
   const $ = load(fs.readFileSync(path.join(root, filename), 'utf8'));
   assert.equal($('h1').length, 1, `One H1 required: ${filename}`);
   const canonical = $('link[rel=canonical]').attr('href');
