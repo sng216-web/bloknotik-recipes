@@ -1,0 +1,17 @@
+---
+import { pathFor, absoluteUrl } from '../lib/site-config';
+// Public shell only. Private content is fetched at runtime after backend authentication.
+---
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Редакция · Блокнотик</title><meta name="description" content="Вход в закрытую редакцию Блокнотика."><link rel="canonical" href={absoluteUrl('redakciya/')}><meta property="og:url" content={absoluteUrl('redakciya/')}><meta property="og:image" content={absoluteUrl('images/kitchen.webp')}><link rel="stylesheet" href={pathFor('redakciya/editorial.css')}><script type="module" src={pathFor('redakciya/client.js')}></script></head>
+<body><header><a class="brand" href={pathFor('redakciya/')}>Блокнотик <span>Редакция</span></a><div><span id="identity"></span> <button id="logout" type="button">Завершить сеанс</button></div></header>
+<main><p id="notice" role="status" aria-live="polite">Проверяем доступ…</p><div id="workspace" hidden><aside><h1>Материалы</h1><p class="muted">Закрытая редакционная очередь</p><nav id="queue" aria-label="Материалы"></nav></aside>
+<section id="material" hidden><div class="topline"><span class="badge">Нужна проверка</span><span id="revision"></span></div><h2 id="title"></h2><div id="blockers" class="blockers"></div><p id="qa-state"></p><ul id="qa-notes"></ul>
+<div class="actions"><button id="edit" type="button">Изменить</button><button id="prepare" type="button">Отправить на повторную проверку</button><button id="return" type="button">Отклонить / вернуть</button><button disabled type="button" title="Публичный выпуск недоступен на этом этапе">Одобрить и опубликовать</button></div>
+<label for="review-note">Замечание редактора</label><textarea id="review-note" rows="2" maxlength="4000"></textarea>
+<div class="images" id="images"></div><section><h3>Права и источники</h3><div id="rights"></div><ul id="sources"></ul></section>
+<form id="editor"><fieldset id="fields" disabled><legend>Статья и рецепт</legend>
+<label>Заголовок<input id="h1" maxlength="160" required></label><label>SEO title<input id="seoTitle" maxlength="160" required></label><label>Meta description<textarea id="metaDescription" rows="3" maxlength="400" required></textarea></label><label>Slug<input id="slug" maxlength="80" pattern="[a-z0-9]+(-[a-z0-9]+)*" required></label>
+<label>Вступление<textarea id="introduction" rows="4" required></textarea></label><label>Текст статьи · абзац с новой строки<textarea id="narrative" rows="8"></textarea></label><label>Советы · каждый с новой строки<textarea id="tips" rows="4"></textarea></label><label>Заключение<textarea id="conclusion" rows="3"></textarea></label>
+<h3>Ингредиенты</h3><div id="ingredients"></div><label>Порции<input id="servings" type="number" min="1" step="1"></label><h3>Шаги</h3><div id="steps"></div><button id="save" type="submit">Сохранить новую редакцию</button></fieldset></form>
+<section><h3>История версий</h3><div id="history"></div></section></section></div></main><footer>Приватная редакция. Публичный выпуск отключён.</footer></body></html>
